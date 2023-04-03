@@ -11,6 +11,9 @@ LIBS=-lm -lrt -latomic
 
 all: gs_seq gs_pth
 
+debug: CFLAGS:=-std=c11 -O0 -D_XOPEN_SOURCE=600 -DDEBUG=1 -Wall -Werror -g
+debug: gs_seq gs_pth
+
 gs_pth: gs_common.o gsi_pth.o timing.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lpthread
 

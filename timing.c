@@ -26,7 +26,8 @@
 static void
 checked_gettime(struct timespec *ts)
 {
-        if (clock_gettime(CLOCK_ID, ts) != 0) {
+        if (clock_gettime(CLOCK_ID, ts) != 0)
+        {
                 perror("clock_gettime failed");
                 abort();
         }
@@ -37,7 +38,8 @@ timing_precision()
 {
         struct timespec ts;
 
-        if (clock_getres(CLOCK_ID, &ts) != 0) {
+        if (clock_getres(CLOCK_ID, &ts) != 0)
+        {
                 perror("clock_getres failed");
                 abort();
         }
@@ -45,8 +47,7 @@ timing_precision()
         return (ts.tv_sec + ts.tv_nsec * 1E-9);
 }
 
-void
-timing_start(struct timespec *ts_start)
+void timing_start(struct timespec *ts_start)
 {
         checked_gettime(ts_start);
 }
@@ -65,7 +66,7 @@ timing_stop(struct timespec *ts_start)
                 ts.tv_nsec >= ts_start->tv_nsec));
 
         return ts.tv_sec - ts_start->tv_sec +
-                (ts.tv_nsec - ts_start->tv_nsec) * 1E-9;
+               (ts.tv_nsec - ts_start->tv_nsec) * 1E-9;
 }
 
 /*

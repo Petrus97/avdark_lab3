@@ -18,14 +18,12 @@
 
 const int gsi_is_parallel = 0;
 
-void
-gsi_init()
+void gsi_init()
 {
         gs_verbose_printf("\t****  Initializing the environment ****\n");
 }
 
-void
-gsi_finish()
+void gsi_finish()
 {
         gs_verbose_printf("\t****  Cleaning environment ****\n");
 }
@@ -40,13 +38,14 @@ sweep()
 {
         double error = 0.0;
 
-        for (int i = 1; i < gs_size - 1; i++) {
-                for (int j = 1; j < gs_size - 1; j++) {
-                        double new_value = 0.25 * (
-                                gs_matrix[GS_INDEX(i + 1, j)] +
-                                gs_matrix[GS_INDEX(i - 1, j)] +
-                                gs_matrix[GS_INDEX(i, j + 1)] +
-                                gs_matrix[GS_INDEX(i, j - 1)]);
+        for (int i = 1; i < gs_size - 1; i++)
+        {
+                for (int j = 1; j < gs_size - 1; j++)
+                {
+                        double new_value = 0.25 * (gs_matrix[GS_INDEX(i + 1, j)] +
+                                                   gs_matrix[GS_INDEX(i - 1, j)] +
+                                                   gs_matrix[GS_INDEX(i, j + 1)] +
+                                                   gs_matrix[GS_INDEX(i, j - 1)]);
 
                         /* Accumulate the solution error, we do this
                          * while computing the new solution to avoid
@@ -65,20 +64,23 @@ sweep()
 /**
  *  Wrapper for the whole job. Fires the sweep a given number of time.
  */
-void
-gsi_calculate()
+void gsi_calculate()
 {
         int i;
         double error = gs_tolerance + 1;
 
-        for(i = 0; i < gs_iterations && error > gs_tolerance; i++) {
+        for (i = 0; i < gs_iterations && error > gs_tolerance; i++)
+        {
                 error = sweep();
                 gs_verbose_printf("Iteration: %i, Error: %f\n", i, error);
         }
 
-        if (error <= gs_tolerance) {
+        if (error <= gs_tolerance)
+        {
                 printf("Solution converged after %i iterations.\n", i);
-        } else {
+        }
+        else
+        {
                 printf("Reached maximum number of iterations. Solution did "
                        "NOT converge.\n");
                 printf("Note: This is normal if you are using the "

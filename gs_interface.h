@@ -34,7 +34,6 @@ extern void gsi_finish();
  */
 extern void gsi_calculate();
 
-
 /** 1 if verbose output is enabled */
 extern int gs_verbose;
 
@@ -66,11 +65,11 @@ extern double *gs_matrix;
 extern void gs_verbose_printf(const char *fmt, ...);
 
 #ifndef MIN
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
 #ifndef MAX
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
 #endif
