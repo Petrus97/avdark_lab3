@@ -11,8 +11,12 @@ LIBS=-lm -lrt -latomic
 
 all: gs_seq gs_pth
 
-debug: CFLAGS:=-std=c11 -O0 -D_XOPEN_SOURCE=600 -DDEBUG=1 -Wall -Werror -g
-debug: gs_seq gs_pth
+debug: CFLAGS:=-std=c11 -O0 -D_XOPEN_SOURCE=600 -Wall -Werror -g
+debug: sanitize
+
+sanitize: LDFLAGS += -fsanitize=thread
+sanitize: CFLAGS += -fsanitize=thread
+sanitize: all
 
 gs_pth: gs_common.o gsi_pth.o timing.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lpthread
@@ -27,13 +31,13 @@ test: gs_seq gs_pth
 	@echo '**********************************************************************'
 	@echo 'Starting sequential reference run...'
 	@echo '**********************************************************************'
-	./gs_seq -s 512 -o $(TMP_SEQ)
+	./gs_seq -s 2048 -o $(TMP_SEQ)
 	@echo
 
 	@echo '**********************************************************************'
 	@echo 'Starting parallel run...'
 	@echo '**********************************************************************'
-	./gs_pth -s 512 -o $(TMP_PTH)
+	./gs_pth -s 2048 -o $(TMP_PTH)
 	@echo
 
 	@echo "Test results: "

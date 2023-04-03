@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 
 #include "gs_interface.h"
 
@@ -33,6 +34,8 @@ typedef struct
         double error;
 
         /* TASK: Do you need any thread local state for synchronization? */
+        atomic_uintmax_t progress_counter;
+        char __padding[32]; //
 } thread_info_t;
 
 /** Define to enable debug mode */
@@ -51,6 +54,8 @@ thread_info_t *threads = NULL;
 /** The global error for the last iteration */
 static double global_error;
 
+static pthread_barrier_t barrier;
+
 void gsi_init()
 {
         gs_verbose_printf("\t****  Initializing the  environment ****\n");
@@ -61,6 +66,13 @@ void gsi_init()
                 fprintf(stderr, "Failed to allocate memory for thread information.\n");
                 exit(EXIT_FAILURE);
         }
+        for (size_t i = 0; i < gs_nthreads; i++)
+        {
+                threads[i].progress_counter = 0;
+        }
+
+        // Init the barrier
+        pthread_barrier_init(&barrier, NULL, gs_nthreads);
 
         /* Initialize global_error to something larger than the
          * tolerance to get the algorithm started */
@@ -79,6 +91,8 @@ void gsi_finish()
 
         if (threads)
                 free(threads);
+
+        pthread_barrier_destroy(&barrier);
 }
 
 static void thread_sweep(int tid, int iter, int lbound, int rbound)
@@ -93,6 +107,13 @@ static void thread_sweep(int tid, int iter, int lbound, int rbound)
 
                 /* TASK: Wait for data to be available from the thread
                  * to the left */
+                if (tid != 0)
+                {
+                        while (atomic_load_explicit(&threads[tid - 1].progress_counter, memory_order_seq_cst) < row)
+                        {
+                                // wait the previous thread to complete the row
+                        }
+                }
 
                 dprintf("%d: Starting on row: %d\n", tid, row);
 
@@ -109,6 +130,10 @@ static void thread_sweep(int tid, int iter, int lbound, int rbound)
 
                 /* TASK: Tell the thread to the right that this thread
                  * is done with the row */
+                if (tid != gs_nthreads - 1) // no threads waiting for the last one
+                {
+                        atomic_store_explicit(&threads[tid].progress_counter, row, memory_order_seq_cst);
+                }
 
                 dprintf("%d: row %d done\n", tid, row);
         }
@@ -125,6 +150,22 @@ static void *thread_compute(void *_self)
         int lbound = 0, rbound = 0;
 
         /* TASK: Compute bounds for this thread */
+        // Divide the matrix in N_THREADS chunks vertically
+        int chunk = gs_size / gs_nthreads; // both must be a power of 2
+        if (tid == 0)                      // leftmost thread
+        {
+                lbound = 1;
+                rbound = chunk; // the above comparison is <
+        }
+        else
+        {
+                lbound = tid * chunk;
+                rbound = lbound + chunk;
+        }
+        if(tid == gs_nthreads - 1)
+        {
+                rbound -= 1;
+        }
 
         gs_verbose_printf("%i: lbound: %i, rbound: %i\n", tid, lbound, rbound);
 
@@ -141,10 +182,21 @@ static void *thread_compute(void *_self)
                  * errors */
                 /* Hint: Which thread is guaranteed to complete its
                  * sweep last? */
+                if (tid == gs_nthreads - 1) // the last thread is guaranteed to be executed last
+                {
+                        for (size_t i = 0; i < gs_nthreads; i++)
+                        {
+                                global_error += threads[i].error;
+                        }
+                }
 
                 dprintf("%d: iteration %d done\n", tid, iter);
 
+                // reset counter of the left thread
+                if(tid != 0)
+                        atomic_store_explicit(&threads[tid - 1].progress_counter, 0, memory_order_seq_cst);
                 /* TASK: Iteration barrier */
+                pthread_barrier_wait(&barrier);
         }
 
         gs_verbose_printf("\t****  Thread %d done after %d iterations ****\n", tid,
